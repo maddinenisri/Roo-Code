@@ -75,7 +75,17 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			cwd,
 			pinnedApiConfigs,
 			togglePinnedApiConfig,
+			projectList, // Access projectList from extension state
 		} = useExtensionState()
+
+		// Define Project interface
+		interface Project {
+			id: string | number
+			name: string
+		}
+
+		// State for selected project
+		const [selectedProjectId, setSelectedProjectId] = useState<string | number>("")
 
 		// Find the ID and display text for the currently selected API configuration
 		const { currentConfigId, displayName } = useMemo(() => {
@@ -1005,6 +1015,35 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								triggerClassName="w-full"
 							/>
 						</div>
+
+						{/* Project Selection Dropdown */}
+						{projectList && projectList.length > 0 && (
+							<div className="shrink-0">
+								<SelectDropdown
+									value={selectedProjectId}
+									title="Select Project" // Hardcoded for now
+									options={[
+										{
+											value: "",
+											label: "Select Project", // Hardcoded for now
+											type: DropdownOptionType.PLACEHOLDER,
+										},
+										...projectList.map((project: Project) => ({
+											value: project.id,
+											label: project.name,
+											type: DropdownOptionType.ITEM,
+										})),
+									]}
+									onChange={(value) => {
+										setSelectedProjectId(value as string)
+										vscode.postMessage({ type: "projectSelected", projectId: value })
+									}}
+									placeholder="Select Project" // Hardcoded for now
+									triggerClassName="w-full text-ellipsis overflow-hidden"
+									disabled={!projectList || projectList.length === 0}
+								/>
+							</div>
+						)}
 
 						<div className={cn("flex-1", "min-w-0", "overflow-hidden")}>
 							<SelectDropdown

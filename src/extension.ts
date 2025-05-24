@@ -2,6 +2,14 @@ import * as vscode from "vscode"
 import * as dotenvx from "@dotenvx/dotenvx"
 import * as path from "path"
 
+// Define Project interface and PROJECT_LIST_KEY
+interface Project {
+	id: string | number
+	name: string
+}
+
+const PROJECT_LIST_KEY = "projectListData"
+
 // Load environment variables from .env file
 try {
 	// Specify path to .env file in the project root directory
@@ -46,6 +54,35 @@ import { initializeI18n } from "./i18n"
 let outputChannel: vscode.OutputChannel
 let extensionContext: vscode.ExtensionContext
 
+// Function to fetch project list
+async function fetchProjectList(
+	context: vscode.ExtensionContext,
+	apiConfigName: string | undefined,
+): Promise<Project[]> {
+	try {
+		if (apiConfigName) {
+			outputChannel.appendLine("API configuration found. Fetching project list...")
+			// TODO: Replace with actual API call to fetch projects
+			const sampleProjects: Project[] = [
+				{ id: "proj-123", name: "Project Alpha" },
+				{ id: "proj-456", name: "Project Beta" },
+				{ id: "proj-789", name: "Project Gamma" },
+			]
+			await context.globalState.update(PROJECT_LIST_KEY, sampleProjects)
+			outputChannel.appendLine(`Fetched ${sampleProjects.length} projects.`)
+			return sampleProjects
+		} else {
+			outputChannel.appendLine("No API configuration found. Skipping project list fetch.")
+			await context.globalState.update(PROJECT_LIST_KEY, []) // Store empty
+			return []
+		}
+	} catch (error) {
+		outputChannel.appendLine(`Error fetching project list: ${error.message || error}`)
+		await context.globalState.update(PROJECT_LIST_KEY, []) // Store empty on error
+		return []
+	}
+}
+
 // This method is called when your extension is activated.
 // Your extension is activated the very first time the command is executed.
 export async function activate(context: vscode.ExtensionContext) {
@@ -85,7 +122,11 @@ export async function activate(context: vscode.ExtensionContext) {
 		)
 	}
 
-	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy, codeIndexManager)
+	// Fetch project list
+	const currentApiConfigName = contextProxy.config.currentConfig?.name
+	const projectList = await fetchProjectList(context, currentApiConfigName)
+
+	const provider = new ClineProvider(context, outputChannel, "sidebar", contextProxy, codeIndexManager, projectList)
 	telemetryService.setProvider(provider)
 
 	if (codeIndexManager) {

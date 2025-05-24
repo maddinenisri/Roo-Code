@@ -57,6 +57,14 @@ import { webviewMessageHandler } from "./webviewMessageHandler"
 import { WebviewMessage } from "../../shared/WebviewMessage"
 import { EMBEDDING_MODEL_PROFILES } from "../../shared/embeddingModels"
 
+// Define Project interface (assuming it's not already globally available)
+// If it's in extension.ts and not exported, we might need to redefine or import it.
+// For this exercise, let's assume it might need redefinition or a shared types file.
+interface Project {
+	id: string | number
+	name: string
+}
+
 /**
  * https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
  * https://github.com/KumarVariable/vscode-extension-sidebar-html/blob/master/src/customSidebarViewProvider.ts
@@ -88,6 +96,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 	public readonly latestAnnouncementId = "may-21-2025-3-18" // Update for v3.18.0 announcement
 	public readonly providerSettingsManager: ProviderSettingsManager
 	public readonly customModesManager: CustomModesManager
+	private _projectList: Project[] // Added projectList property
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -95,8 +104,11 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 		private readonly renderContext: "sidebar" | "editor" = "sidebar",
 		public readonly contextProxy: ContextProxy,
 		public readonly codeIndexManager?: CodeIndexManager,
+		projectList: Project[], // Added projectList parameter
 	) {
 		super()
+
+		this._projectList = projectList // Store the project list
 
 		this.log("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
@@ -1262,6 +1274,8 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 			codebaseIndexModels,
 		} = await this.getState()
 
+		const projectList = this._projectList // Get project list from the stored property
+
 		const telemetryKey = process.env.POSTHOG_API_KEY
 		const machineId = vscode.env.machineId
 		const allowedCommands = vscode.workspace.getConfiguration(Package.name).get<string[]>("allowedCommands") || []
@@ -1362,6 +1376,7 @@ export class ClineProvider extends EventEmitter<ClineProviderEvents> implements 
 				codebaseIndexEmbedderBaseUrl: "",
 				codebaseIndexEmbedderModelId: "",
 			},
+			projectList: projectList, // Add projectList to the state
 		}
 	}
 
